@@ -1,4 +1,5 @@
 # ui.py
+
 import pygame
 from config import (
     WIDTH, HEIGHT, GRID_SIZE, WORD_LENGTH,
@@ -7,7 +8,7 @@ from config import (
 )
 
 # Layout constants
-TOP_MARGIN    = 80    # space for title/messages
+TOP_MARGIN    = 80    # space for header & messages
 BOTTOM_MARGIN = 180   # space for on-screen keyboard
 PADDING       = 20    # left/right padding
 GRID_SCALE    = 0.7   # shrink grid to fit
@@ -24,26 +25,32 @@ START_Y     = TOP_MARGIN
 
 # Keyboard sizing
 KEY_SPACING  = 6
-max_keys     = max(len(r) for r in KEYBOARD_ROWS) + 2  # +2 for Enter/Back on 3rd row
+max_keys     = max(len(r) for r in KEYBOARD_ROWS) + 2  # +2 for Enter/Back
 KEY_W        = (WIDTH - 2 * PADDING - (max_keys - 1) * KEY_SPACING) // max_keys
 KEY_H        = int(KEY_W * 0.6)
 KEYBOARD_Y   = START_Y + GRID_HEIGHT + 40
+
+# Styling constants
+HEADER_FONT_SIZE = 64
+BACK_BG_COLOR    = (160, 160, 160)
+
 
 class GameUI:
     def __init__(self, screen, game):
         self.screen     = screen
         self.game       = game
-        self.font       = pygame.font.SysFont(FONT_NAME, FONT_SIZE)
-        self.small_font = pygame.font.SysFont(FONT_NAME, KEY_FONT_SIZE, bold=True)
+
+        self.header_font = pygame.font.SysFont(FONT_NAME, HEADER_FONT_SIZE, bold=True)
+        self.font        = pygame.font.SysFont(FONT_NAME, FONT_SIZE)
+        self.small_font  = pygame.font.SysFont(FONT_NAME, KEY_FONT_SIZE, bold=True)
 
         self.message    = ""
         self.msg_timer  = 0
         self.key_rects  = []  # list of (pygame.Rect, label)
 
     def handle_input(self, event):
-        # ignore once game over
         if self.game.is_over():
-            # but allow clicking “Back” or “Enter” on keyboard if you like
+            # you can still click Enter/BACK after game over
             pass
 
         # physical keyboard
@@ -57,7 +64,7 @@ class GameUI:
                 if ch.isalpha():
                     self.game.add_letter(ch)
 
-        # mouse click on our on-screen keys
+        # mouse click on on-screen keys
         elif event.type == pygame.MOUSEBUTTONDOWN:
             for rect, label in self.key_rects:
                 if rect.collidepoint(event.pos):
@@ -79,16 +86,14 @@ class GameUI:
         now = pygame.time.get_ticks()
         self.screen.fill(COLORS['bg'])
 
-        # 1) Title
-        title = "Practice Wordle"
-        title_surf = self.small_font.render(title, True, COLORS['text'])
-        self.screen.blit(
-            title_surf,
-            ((WIDTH - title_surf.get_width()) // 2, PADDING // 2)
-        )
+        # 1) WORDLE header
+        header_surf = self.header_font.render("ZAY'S WORDLE", True, COLORS['text'])
+        header_x    = (WIDTH - header_surf.get_width()) // 2
+        header_y    = PADDING // 2
+        self.screen.blit(header_surf, (header_x, header_y))
 
-        # 2) Transient message below title
-        msg_y = PADDING // 2 + KEY_FONT_SIZE + 10
+        # 2) Transient message below header
+        msg_y = header_y + header_surf.get_height() + 10
         if self.message and now < self.msg_timer:
             msg_surf = self.small_font.render(self.message, True, COLORS['text'])
             self.screen.blit(
@@ -141,29 +146,31 @@ class GameUI:
         # 5) On-screen keyboard
         self.key_rects.clear()
         for row_idx, row_keys in enumerate(KEYBOARD_ROWS):
-            # build row; on 3rd row add Enter/BACK
+            # on 3rd row insert Enter and BACK
+            keys = list(row_keys)
             if row_idx == 2:
-                keys = ['ENTER'] + list(row_keys) + ['BACK']
-            else:
-                keys = list(row_keys)
+                keys = ['ENTER'] + keys + ['BACK']
 
-            row_len      = len(keys)
-            total_width  = row_len * KEY_W + (row_len - 1) * KEY_SPACING
-            start_x      = (WIDTH - total_width) // 2
-            y            = KEYBOARD_Y + row_idx * (KEY_H + KEY_SPACING)
+            row_len     = len(keys)
+            total_w     = row_len * KEY_W + (row_len - 1) * KEY_SPACING
+            start_x     = (WIDTH - total_w) // 2
+            y           = KEYBOARD_Y + row_idx * (KEY_H + KEY_SPACING)
 
             for i, key in enumerate(keys):
                 x    = start_x + i * (KEY_W + KEY_SPACING)
                 rect = pygame.Rect(x, y, KEY_W, KEY_H)
 
-                # pick key color from game.key_states
-                st   = self.game.key_states.get(key.lower())
-                color = COLORS[st] if st in COLORS else (58,58,60)
+                # pick key color (override BACK)
+                if key == 'BACK':
+                    color = BACK_BG_COLOR
+                else:
+                    st    = self.game.key_states.get(key.lower())
+                    color = COLORS[st] if st in COLORS else (58,58,60)
 
                 pygame.draw.rect(self.screen, color, rect, border_radius=5)
                 pygame.draw.rect(self.screen, COLORS['text'], rect, 2, border_radius=5)
 
-                label = '←' if key == 'BACK' else key
+                label = '⌫' if key == 'BACK' else key
                 surf  = self.small_font.render(label, True, COLORS['text'])
                 tw, th = surf.get_size()
                 self.screen.blit(

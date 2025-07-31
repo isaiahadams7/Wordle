@@ -1,91 +1,121 @@
 # game.py
+
 import random
-from config import WORD_LENGTH, GRID_SIZE
+import json
 import os
+from config import WORD_LENGTH, GRID_SIZE
+
+# Where stats are persisted
+STATS_FILE = 'stats.json'
 
 class Game:
     def __init__(self):
-        # Load your 5-letter words from words.txt
-        base = os.path.dirname(__file__)
-        path = os.path.join(base, 'words.txt')
-        with open(path, 'r') as f:
-            words = [w.strip().lower() for w in f if len(w.strip()) == WORD_LENGTH]
+        # load valid words
+        with open('words.txt') as f:
+            self.words = [
+                w.strip().upper()
+                for w in f
+                if len(w.strip()) == WORD_LENGTH
+            ]
 
-        # Use set for fast lookup, list for random choice
-        self.dictionary    = set(words)
-        self.solution_list = list(self.dictionary)
+        # pick a target
+        self.target = random.choice(self.words)
 
-        # Pick a random target for this practice run
-        self.target        = random.choice(self.solution_list)
-        self.guesses       = []     # all submitted guesses
-        self.results       = []     # parallel list of status-lists
-        self.current_guess = ""     # letters the player is typing
-        self.key_states    = {}     # letter -> best status seen
+        # game state
+        self.guesses       = []     # list of submitted guesses
+        self.results       = []     # parallel list of per‐letter statuses
+        self.current_guess = ""     # what the player is typing now
+        self.key_states    = {}     # for coloring the on-screen keyboard
 
-    def add_letter(self, ch: str):
-        """Append a letter to the current guess (capped at WORD_LENGTH)."""
-        if len(self.current_guess) < WORD_LENGTH:
-            self.current_guess += ch.lower()
+    def add_letter(self, ch):
+        if len(self.current_guess) < WORD_LENGTH and ch.isalpha():
+            self.current_guess += ch.upper()
 
     def remove_letter(self):
-        """Remove the last letter from the current guess."""
         self.current_guess = self.current_guess[:-1]
 
-    def submit_guess(self) -> bool:
-        """
-        Validate and score the current guess.
-        Returns True if the guess was valid and scored, False otherwise.
-        """
-        guess = self.current_guess.lower()
+    def is_won(self):
+        return any(
+            guess == self.target
+            for guess in self.guesses
+        )
 
-        # 1) Check length
-        if len(guess) != WORD_LENGTH:
+    def is_over(self):
+        # either guessed correctly or exhausted all rows
+        return self.is_won() or len(self.guesses) >= GRID_SIZE
+
+    def submit_guess(self):
+        # must be full length and in word list
+        if len(self.current_guess) != WORD_LENGTH:
+            return False
+        if self.current_guess not in self.words:
             return False
 
-        # 2) Check dictionary
-        if guess not in self.dictionary:
-            return False
+        # commit the guess
+        guess = self.current_guess
+        self.guesses.append(guess)
 
-        # 3) Score it: build a list of 'correct', 'present', 'absent'
-        status = ['absent'] * WORD_LENGTH
+        # evaluate result
+        status = []
         target_chars = list(self.target)
-
-        # First pass: mark greens
+        # first pass: correct spots
         for i, ch in enumerate(guess):
             if ch == target_chars[i]:
-                status[i] = 'correct'
-                target_chars[i] = None  # consume this letter
+                status.append('correct')
+                target_chars[i] = None
+            else:
+                status.append(None)
 
-        # Build counts of remaining letters in target
-        counts = {}
-        for ch in target_chars:
-            if ch:
-                counts[ch] = counts.get(ch, 0) + 1
-
-        # Second pass: mark yellows
+        # second pass: present vs absent
         for i, ch in enumerate(guess):
-            if status[i] == 'absent' and counts.get(ch, 0) > 0:
-                status[i] = 'present'
-                counts[ch] -= 1
-
-        # 4) Record the guess & result
-        self.guesses.append(guess)
+            if status[i] is None:
+                if ch in target_chars:
+                    status[i] = 'present'
+                    target_chars[target_chars.index(ch)] = None
+                else:
+                    status[i] = 'absent'
         self.results.append(status)
+
+        # update keyboard colors
+        for i, ch in enumerate(guess):
+            prev = self.key_states.get(ch.lower())
+            # don't override a correct with a lesser state
+            if prev == 'correct':
+                continue
+            self.key_states[ch.lower()] = status[i]
+
+        # reset current guess
         self.current_guess = ""
 
-        # 5) Update on-screen keyboard states (never downgrade)
-        priority = {'absent': 0, 'present': 1, 'correct': 2}
-        for ch, st in zip(guess, status):
-            prev = self.key_states.get(ch)
-            if not prev or priority[st] > priority[prev]:
-                self.key_states[ch] = st
+        # if the game just ended, bump stats
+        if self.is_over():
+            self._update_stats(self.is_won())
 
         return True
 
-    def is_over(self) -> bool:
-        """Returns True if player has won or used up all attempts."""
-        return self.is_won() or len(self.guesses) >= GRID_SIZE
+    def _update_stats(self, won):
+        """
+        Load stats.json (or create defaults), increment wins/losses,
+        and rewrite the file.
+        """
+        data = {'wins': 0, 'losses': 0}
+        try:
+            if os.path.exists(STATS_FILE):
+                with open(STATS_FILE, 'r') as fp:
+                    data = json.load(fp)
+        except (json.JSONDecodeError, IOError):
+            # corrupted or unreadable file: reset data
+            data = {'wins': 0, 'losses': 0}
 
-    def is_won(self) -> bool:
-        """Returns True if the last guess exactly matched the target."""
-        return bool(self.guesses and self.guesses[-1] == self.target)
+        if won:
+            data['wins'] = data.get('wins', 0) + 1
+        else:
+            data['losses'] = data.get('losses', 0) + 1
+
+        # write back out
+        try:
+            with open(STATS_FILE, 'w') as fp:
+                json.dump(data, fp, indent=2)
+        except IOError:
+            # if writing fails, there's not much we can do
+            pass

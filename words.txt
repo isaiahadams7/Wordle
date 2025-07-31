@@ -72,6 +72,7 @@ broad
 broke
 brown
 build
+burnt
 built
 buyer
 cable
@@ -327,10 +328,12 @@ radio
 raise
 range
 rapid
+rates
 ratio
 reach
 ready
 refer
+rents
 right
 rival
 river
@@ -479,6 +482,7 @@ voice
 waste
 watch
 water
+weeks
 wheel
 where
 which
