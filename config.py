@@ -10,6 +10,7 @@ COLORS = {
     'absent' : (120, 124, 126),
     'bg'     : ( 18,  18,  19),
     'text'   : (211, 214, 218),
+    'button_BG': (100, 100, 100),
 }
 
 FONT_NAME     = 'freesansbold.ttf'

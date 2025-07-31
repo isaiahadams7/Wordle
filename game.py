@@ -96,7 +96,7 @@ class Game:
     def _update_stats(self, won):
         """
         Load stats.json (or create defaults), increment wins/losses,
-        and rewrite the file.
+        and rewrite the file. Awards coins on win if a Shop has been injected.
         """
         data = {'wins': 0, 'losses': 0}
         try:
@@ -109,6 +109,9 @@ class Game:
 
         if won:
             data['wins'] = data.get('wins', 0) + 1
+            # award coins if shop is attached
+            if hasattr(self, 'shop'):
+                self.shop.earn_coins(25)
         else:
             data['losses'] = data.get('losses', 0) + 1
 

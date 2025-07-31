@@ -165,7 +165,7 @@ class GameUI:
 
         # 4) End-of-game overlay text
         if self.game.is_over():
-            res = "You Win!" if self.game.is_won() else f"Game Over: {self.game.target.upper()}"
+            res = "You Win!" if self.game.is_won() else f"Game Over the word was: {self.game.target.upper()}"
             rs = self.small_font.render(res, True, COLORS['text'])
             self.screen.blit(
                 rs,

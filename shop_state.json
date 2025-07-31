@@ -1,0 +1,8 @@
+{
+  "coins": 0,
+  "inventory": {
+    "extra_guess": 0,
+    "reveal_random": 0,
+    "reveal_one": 1
+  }
+}
