@@ -1,8 +1,8 @@
 {
-  "coins": 0,
+  "coins": 50,
   "inventory": {
-    "extra_guess": 0,
-    "reveal_random": 0,
+    "extra_guess": 1,
+    "reveal_random": 1,
     "reveal_one": 1
   }
 }

@@ -61,7 +61,8 @@ arrow
 artsy  
 ascot  
 aside  
-askew    
+askew  
+aspect  
 asset  
 atlas  
 attic  
@@ -309,7 +310,8 @@ colon
 color  
 comet  
 comic  
-comma    
+comma  
+compel  
 conch  
 condo  
 cones  
@@ -2553,5 +2555,3 @@ zippy
 zonal  
 zoned  
 zones  
-
-

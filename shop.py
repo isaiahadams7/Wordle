@@ -161,20 +161,22 @@ class Shop:
         self.save_state()
         return True
 
-    def use(self, item_id: str, game) -> bool:
-        """
-        Redeem one unit of item_id and apply its effect to `game`.
-        Returns True if used successfully, False otherwise.
-        """
-        if self.inventory.get(item_id, 0) < 1:
-            return False
+    def use(self, key, game):
+        inv = self.get_inventory()
+        if inv.get(key, 0) < 1:
+            return  # nothing to do
 
-        shop_item = CATALOG[item_id]
-        shop_item.effect(game)
+        # Decrement
+        inv[key] -= 1
 
-        self.inventory[item_id] -= 1
-        self.save_state()
-        return True
+        # Apply effect
+        if key == 'reveal':
+            game.reveal_letter()
+        elif key == 'extra':
+            game.grant_extra_guess()
+        elif key == 'freeze':
+            game.freeze_timer()
+        
 
     def get_catalog(self):
         """Return list of ShopItems for display in your UI."""

@@ -22,10 +22,14 @@ class Game:
         self.target = random.choice(self.words)
 
         # game state
-        self.guesses       = []     # list of submitted guesses
-        self.results       = []     # parallel list of per‐letter statuses
-        self.current_guess = ""     # what the player is typing now
-        self.key_states    = {}     # for coloring the on-screen keyboard
+        self.guesses        = []     # list of submitted guesses
+        self.results        = []     # parallel list of per‐letter statuses
+        self.current_guess  = ""     # what the player is typing now
+        self.key_states     = {}     # for coloring the on-screen keyboard
+
+        # boost‐related state
+        self.max_guesses    = GRID_SIZE   # can be bumped by Extra Try
+
 
     def add_letter(self, ch):
         if len(self.current_guess) < WORD_LENGTH and ch.isalpha():
@@ -41,8 +45,8 @@ class Game:
         )
 
     def is_over(self):
-        # either guessed correctly or exhausted all rows
-        return self.is_won() or len(self.guesses) >= GRID_SIZE
+        # either guessed correctly or used up all allowed rows
+        return self.is_won() or len(self.guesses) >= self.max_guesses
 
     def submit_guess(self):
         # must be full length and in word list
@@ -104,7 +108,6 @@ class Game:
                 with open(STATS_FILE, 'r') as fp:
                     data = json.load(fp)
         except (json.JSONDecodeError, IOError):
-            # corrupted or unreadable file: reset data
             data = {'wins': 0, 'losses': 0}
 
         if won:
@@ -115,10 +118,42 @@ class Game:
         else:
             data['losses'] = data.get('losses', 0) + 1
 
-        # write back out
         try:
             with open(STATS_FILE, 'w') as fp:
                 json.dump(data, fp, indent=2)
         except IOError:
-            # if writing fails, there's not much we can do
             pass
+
+
+    # ─── Boost Hooks ─────────────────────────────────────────────────
+
+    def reveal_letter(self):
+        """
+        Reveal a random letter from the target by marking it 'correct' on the keyboard.
+        Returns the letter, or None if everything is already revealed.
+        """
+        candidates = [
+            ch for ch in set(self.target)
+            if self.key_states.get(ch.lower()) != 'correct'
+        ]
+        if not candidates:
+            return None
+
+        letter = random.choice(candidates)
+        self.key_states[letter.lower()] = 'correct'
+        return letter
+
+
+    def grant_extra_guess(self):
+        """
+        Increase the number of allowed guesses by one.
+        """
+        self.max_guesses += 1
+
+
+    def freeze_timer(self):
+        """
+        Placeholder for a “freeze” effect. If you have a timer in GameUI,
+        call its pause/unpause methods from your GameUI.freeze_timer().
+        """
+        pass
