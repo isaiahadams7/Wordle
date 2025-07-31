@@ -1,14 +1,24 @@
-WIDTH, HEIGHT = 600, 700
-GRID_SIZE = 6  # Number of guesses
-WORD_LENGTH = 5
+# config.py
+WIDTH        = 1000
+HEIGHT       = 1100
+GRID_SIZE    = 6
+WORD_LENGTH  = 5
 
 COLORS = {
-    'bg': (18, 18, 19),
-    'text': (255, 255, 255),
-    'correct': (83, 141, 78),
-    'present': (181, 159, 59),
-    'absent': (58, 58, 60)
+    'correct': (106, 170, 100),
+    'present': (201, 180,  88),
+    'absent' : (120, 124, 126),
+    'bg'     : ( 18,  18,  19),
+    'text'   : (211, 214, 218),
 }
 
-FONT_NAME = "arial"
-FONT_SIZE = 40
+FONT_NAME     = 'freesansbold.ttf'
+FONT_SIZE     = 32
+KEY_FONT_SIZE = 24
+
+# bottom keyboard layout
+KEYBOARD_ROWS = [
+    "QWERTYUIOP",
+    "ASDFGHJKL",
+    "ZXCVBNM"
+]
